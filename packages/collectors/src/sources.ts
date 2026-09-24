@@ -17,14 +17,6 @@ export const SOURCES: SourceConfig[] = [
     sourceType: "ORGANIZATION",
   },
   {
-    slug: "techcrunch-ai",
-    name: "TechCrunch — AI",
-    url: "https://techcrunch.com/category/artificial-intelligence/feed/",
-    feedType: "RSS",
-    language: "en",
-    sourceType: "MEDIA",
-  },
-  {
     slug: "the-verge-ai",
     name: "The Verge — AI",
     url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
