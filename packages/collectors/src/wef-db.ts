@@ -1524,14 +1524,8 @@ async function processCandidate(params: {
       // The web page falls back to the original title and content.
       publishedArticle = articleRecord;
 
-      await createCollectionItem(
-        runId,
-        sourceFeed.id,
-        articleRecord.id,
-        "RELEVANT",
-        error instanceof Error
-          ? `DeepL translation failed; original article published as fallback: ${error.message}`
-          : "DeepL translation failed; original article published as fallback.",
+      console.log(
+        "Original article will be published because DeepL translation is unavailable.",
       );
     }
   } else {
