@@ -63,11 +63,11 @@ export default async function ArticlePage({
 
   const articleTitle = isRussian
     ? article.title
-    : article.translatedTitle;
+    : article.translatedTitle || article.title;
 
   const articleContent = isRussian
     ? article.originalContent
-    : article.translatedContent;
+    : article.translatedContent || article.originalContent;
 
   return (
     <main className="min-h-screen bg-[#071016] text-[#f1ead9]">
