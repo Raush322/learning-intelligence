@@ -187,6 +187,8 @@ function isPromotionalCandidate(title: string): boolean {
     /\bfinal \d+ hours?\b/,
     /\b\d+ hours? (left|to)\b/,
     /\b\d+ days? left to\b/,
+    /\b\d+ days? to save\b/,
+    /\b\d+ days? .*save\b//,
     /\blast chance\b/,
     /\bregister now\b/,
     /\bregistration (is )?open\b/,
@@ -221,6 +223,21 @@ function isPromotionalCandidate(title: string): boolean {
     return true;
   }
 
+  const savingsAndParticipationPatterns = [
+    /\b(?:save|discount|discounted)\b.*\b(?:attend|attendance|ticket|tickets|participat)\b/,
+    /\b(?:attend|attendance|ticket|tickets|participat)\b.*\b(?:save|discount|discounted)\b/,
+    /\bearly[- ]bird\b/,
+    /\blimited[- ]time offer\b/,
+  ];
+
+  if (
+    savingsAndParticipationPatterns.some((pattern) =>
+      pattern.test(normalized),
+    )
+  ) {
+    return true;
+  }
+
   // Generic event/conference wording is not enough by itself.
   // It becomes promotional only when combined with an explicit call to action.
   const genericEventPatterns = [
@@ -243,6 +260,10 @@ function isPromotionalCandidate(title: string): boolean {
     /\bзарегистр/,
     /\bпосет/,
     /\bучаств/,
+    /\bsave\b/,
+    /\bdiscount\b/,
+    /\bdiscounted\b/,
+    /\bearly[- ]bird\b/,
   ];
 
   return (
@@ -344,7 +365,6 @@ function hasAiSignal(title: string, description = ""): boolean {
 function isAiFocusedSource(sourceSlug: string): boolean {
   return [
     "google-ai",
-    "techcrunch-ai",
     "the-verge-ai",
     "wired-ai",
     "ars-technica-ai",
@@ -394,10 +414,9 @@ function isRelevantCandidate(
     return false;
   }
 
-  // Specialized AI feeds are editorially relevant by default. They can
-  // contain adjacent stories, so only a small set of clearly unrelated
-  // headlines is excluded here. Relevance is then refined by the topic
-  // classifier using the article text.
+  // Specialized AI feeds no longer bypass the deterministic editorial
+  // exclusions above. They are accepted after infrastructure, promotional,
+  // and clearly-adjacent checks; the topic classifier then refines them.
   if (sourceSlug && isAiFocusedSource(sourceSlug)) {
     return true;
   }
@@ -1500,27 +1519,20 @@ async function processCandidate(params: {
       );
       console.error(error);
 
-      await prisma.article.delete({
-        where: { id: articleRecord.id },
-      });
+      // Keep the original article when translation is unavailable
+      // (for example, when the DeepL character quota is exhausted).
+      // The web page falls back to the original title and content.
+      publishedArticle = articleRecord;
 
       await createCollectionItem(
         runId,
         sourceFeed.id,
-        null,
-        "ERROR",
+        articleRecord.id,
+        "RELEVANT",
         error instanceof Error
-          ? error.message
-          : String(error),
+          ? `DeepL translation failed; original article published as fallback: ${error.message}`
+          : "DeepL translation failed; original article published as fallback.",
       );
-
-      return {
-        fresh: true,
-        newArticle: true,
-        duplicate: false,
-        relevant: false,
-        error: true,
-      };
     }
   } else {
     publishedArticle =
